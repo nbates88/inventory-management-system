@@ -17,7 +17,7 @@ app.post("/init", (req: Request, res: Response) => {
         return res.sendStatus(400)
     }
     inventoryRepo.init(inventory)
-    console.log(inventoryRepo.inventory)
+    console.log("inventory", inventoryRepo.inventory)
 
     res.sendStatus(201);
 
@@ -31,7 +31,7 @@ app.post('/process_restock', (req: Request, res: Response) => {
     }
 
     inventoryRepo.process_restock(inventoryRestock)
-    console.log(inventoryRepo.inventory)
+    console.log("inventory", inventoryRepo.inventory)
 
     res.sendStatus(200);
 })
@@ -45,8 +45,8 @@ app.post('/process_order', (req: Request, res: Response) => {
     }
 
     orderRepo.insert_order(content)
-    console.log(orderRepo.orderHeaders)
-    console.log(orderRepo.orderTransactionsAudit)
+    console.log("orderHeaders", orderRepo.orderHeaders)
+    console.log("orderTransactions", orderRepo.orderTransactionsAudit)
 
     res.sendStatus(201);
 })
@@ -65,7 +65,7 @@ app.post('/process_awaiting_fulfillment', (_: Request, res: Response) => {
         }
     })
 
-    console.log(orderRepo.orderTransactionsAudit)
+    console.log("orderTransactions", orderRepo.orderTransactionsAudit)
     res.sendStatus(200);
 })
 
@@ -81,9 +81,9 @@ app.post('/process_awaiting_shipment', (_: Request, res: Response) => {
         orderRepo.prepare_shipments(shipmentsGroupedByOrder[orderId])
         //ship_package(orderShipments)
     })
-    
-    console.log(orderRepo.orderTransactionsAudit)
-    console.log(shipmentRepo.shipments)
+
+    console.log("orderTransactions", orderRepo.orderTransactionsAudit)
+    console.log("shipments", shipmentRepo.shipments)
     res.sendStatus(200)
 })
 

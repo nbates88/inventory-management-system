@@ -34,7 +34,13 @@ This project consists of the APIs for a sample lightweight inventory management 
 In order to keep the scope minimal, some tradeoffs have been made including:
 * Instead of using a real relational database, objects representing tables have been stored in memory as "repositories" that also contain the business logic
 * In an ideal world, to continually process orders that are awaiting a restock of items and transactions awaiting shipment, background processess such as a cron job or pub/sub would be implemented. However, for the sake of this assignment, these endpoint will need to be alled manually.  
-* When determining how to split up a group of transactions into shipments with a weight that equaled no more than the carrying limit of a drone, a niave algorithm has been utilized. However, a better way to achieve more efficient packaging would be to use a version of the knapsack algorithm. 
+* When determining how to split up a group of transactions into shipments with a weight that equaled no more than the carrying limit of a drone, a niave algorithm has been utilized. However, a better way to achieve more efficient packaging would be to use a version of the knapsack algorithm.
+
+Some considerations about order processing:
+1. An order line is represented as an order transaction that has an item and quantity information and a state of AWAITING FULFILLMENT OR AWAITING SHIPMENT OR SHIPPED
+2. An audit trail is maintained for all processing happening on a line transaction by copying and mutating instead of directly updating it
+3. An order line might be split into several other lines for processing based on available quantity in the case of partial fulfillment
+4. The quantity shipped for an order line might be split over several shipments to optimize for shipment weight
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -80,8 +86,7 @@ This is an example of how to list things you need to use the software and how to
 2. Begin my initializing the inventory by calling `localhost:8000/init` with a JSON payload of products:
 ```
 [{"mass_g": 700, "product_name": "RBC A+ Adult", "product_id": 0}, {"mass_g": 700,
-"product_name": "RBC B+ Adult", "product_id": 1}, {"mass_g": 750, "product_name": "RBC
-AB+ Adult", "product_id": 2}, {"mass_g": 680, "product_name": "RBC O- Adult",
+"product_name": "RBC B+ Adult", "product_id": 1}, {"mass_g": 750, "product_name": "RBCAB+ Adult", "product_id": 2}, {"mass_g": 680, "product_name": "RBC O- Adult",
 "product_id": 3}, {"mass_g": 350, "product_name": "RBC A+ Child", "product_id": 4},
 {"mass_g": 200, "product_name": "RBC AB+ Child", "product_id": 5}, {"mass_g": 120,
 "product_name": "PLT AB+", "product_id": 6}, {"mass_g": 80, "product_name": "PLT O+",
@@ -90,6 +95,7 @@ AB+ Adult", "product_id": 2}, {"mass_g": 680, "product_name": "RBC O- Adult",
 "FFP A+", "product_id": 10}, {"mass_g": 300, "product_name": "FFP B+", "product_id": 11},
 {"mass_g": 300, "product_name": "FFP AB+", "product_id": 12}]
 ```
+  The resulting inventory will be logged.
 
 3. Add some stock by calling `localhost:8000/process_restock` with a JSON payload:
 ```
@@ -99,6 +105,7 @@ AB+ Adult", "product_id": 2}, {"mass_g": 680, "product_name": "RBC O- Adult",
 8, "quantity": 20}, {"product_id": 9, "quantity": 10}, {"product_id": 10, "quantity": 5},
 {"product_id": 11, "quantity": 5}, {"product_id": 12, "quantity": 5}]
 ```
+  The resulting stocked inventory will be logged. 
 
   Ideally, this would also kick off the `process_awaiting_fulfillment` flow. Could use a pub/sub for when a transaction is set to `awaiting_fulfillment` so that it subscribes to any update of quantity for that product.
 
@@ -106,11 +113,15 @@ AB+ Adult", "product_id": 2}, {"mass_g": 680, "product_name": "RBC O- Adult",
 ```
 {"order_id": 124, "requested": [{"product_id": 4, "quantity": 6}, {"product_id": 8, "quantity": 5}]}
 ```
+  The updated order header and order transaction tables will be logged.
 
 5. Simulate a background job continuously looking for orders that need to be fulfilled by calling `localhost:8000/process_awaiting_fulfillment`. As noted above, this process would be continually run in the background on some cadence so that the system is always trying to move orders throught the process. It would also be kicked off anytime a restock of inventory occurs. 
 
+  The updated order transaction table will be logged.
+
 6. Simulate a background job continuously looking for transactions that need to be shipped by calling `localhost:8000/process_awaiting_shipment`. Ideally this endpoint would then call `localhost:8000/ship_package` for each package created but it's not possible with this minimal set up.
 
+  The updated order transaction and shipment tables will be logged.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
